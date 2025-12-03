@@ -1,0 +1,32 @@
+---
+title: "How have Ireland's traffic collisions changed in recent years"
+author: "Group I: Elise C. Drivon, Daragh M. Hollman, Catherine Kwagala, Lauren K. Nelson"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    code_folding: hide
+---
+
+Individual contributions to each section of this document are as follows:
+
+...
+
+# Introduction
+
+This is where the introduction will go. We describe the data and outline our science question: "How have Ireland's traffic collisions changed in recent years?"
+
+# Data Adjustments
+
+Here is where we include any calculations necessary to put our data into the appropriate shape for analysis. Here is an example of how we should fold the code. See the button on the right: 'Show'.
+
+```{r}
+example_var <- 4
+```
+
+# Analysis
+
+This is where we will show our 4 displays. Each plot will be accompanied by a paragraph explaining the graphic and what was learned from it.
+
+# Summary and Conclusions
+
+Summarise our conclusions in one paragraph
