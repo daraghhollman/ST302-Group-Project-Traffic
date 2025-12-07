@@ -4,28 +4,163 @@ author: "Group I: Elise C. Drivon, Daragh M. Hollman, Catherine Kwagala, Lauren 
 date: "`r Sys.Date()`"
 output:
   html_document:
+    toc: true # We can remove this if the document is too long
     code_folding: hide
 ---
 
 Individual contributions to each section of this document are as follows:
 
-...
+**Elise Drivon**:
 
-# Introduction
+**Daragh Hollman**:
 
-This is where the introduction will go. We describe the data and outline our science question: "How have Ireland's traffic collisions changed in recent years?"
+I, Daragh Hollman, had primary responsibility for sections 1.1, 2.1, and 3.1.
 
-# Data Adjustments
+**Catherine Kwagala**:
 
-Here is where we include any calculations necessary to put our data into the appropriate shape for analysis. Here is an example of how we should fold the code. See the button on the right: 'Show'.
+**Lauren Nelson**:
 
-```{r}
-example_var <- 4
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message=F, warning=F)
 ```
 
-# Analysis
+```{r}
+# Import packages here
+library(ggplot2)
+library(viridis)
+library(tidyr)
+library(dplyr)
+library(sf) # Required udunits, and gdal system dependancies on Linux as packages are installed from source rather than binary. https://r-spatial.github.io/sf/
+```
+
+# 1. Introduction
+
+In this section, we describe the datasets used throughout this report and outline our science question: "How have Ireland's traffic collisions changed in recent years?"
+
+### 1.1 Datasets
+
+The dataset used in this work was [ROA27: Traffic Collisions and Casualties](https://data.cso.ie/table/ROA27) by the Central Statistics Office (CSO). This dataset contained collision and casualty data for all 26 counties in Ireland between the years 2013 and 2023. It recorded 6 statistics:
+
+* Fatal Collisions
+* Injury Collisions
+* All Fatal and Injury Collisions
+* Killed Casualties
+* Injured Casualties
+* All Killed and Injured Casualties
+
+Each of these statistics was provided for each county (and also given as a total) for each year in the dataset.
+
+```{r}
+load("traffic.Rdata")
+```
+
+Additionally, we also used a dataset containing the geometrical information (in latitude and longitude) for each Local Electoral Authority (LEA) in Ireland (see [brendanjodowd/maps](https://github.com/brendanjodowd/maps)). Included in this dataset was the area of each LEA, and its population as of the 2016 census.
+
+```{r, results='hide'}
+# I wrote this section prior to the class on maps, following this guide:
+# https://brendanjodowd.github.io/map_guide/
+# The below .geojson file is from this Github repository: https://github.com/brendanjodowd/maps
+# The README outlines how these this file was created.
+lea_166 <- st_read("https://raw.githubusercontent.com/brendanjodowd/maps/main/lea_166.geojson")
+```
+
+### 1.2 Research Question
+
+...
+
+# 2. Data Adjustments
+
+### 2.1 Combining the CSO dataset with spatial data for each county
+To give a visual overview of these collisions data across the counties of Ireland, we chose to create a heatmap of collisions for each county, and display these data on a map of Ireland. We used the LEA dataset described in Section 1.1 and grouped each LEA by county. We determined county-wide metrics for population and area as the sum of those metrics within each constituent LEA.
+
+```{r}
+counties <- lea_166 |>
+  group_by(COUNTY) |>
+  summarise(geometry = st_union(geometry), POP=sum(Pop2016), AREA=sum(AREA))
+```
+
+We joined the CSO dataset and the counties dataset with the following method. For this display, we only showed total collisions, and hence we first filtered the CSO dataset to only include the `All Fatal and  Injury Collisions` statistic. Further, we removed the `All Counties` row as it was not needed for this display. This left a dataset containing 26 rows (one for each county) and 11 columns (one for each year). We used `pivot_longer()` to create a row for each pair of county and year, recording the total collisions. Additionally, we determined the mean for each county across all years. The collisions dataset and counties dataset were then combined (merging on the `County` rows - `COUNTY` in the counties dataset). The counties dataset contained information for Northern Ireland, however, as the collisions dataset does not report on counties in Northern Ireland, this created 'na' values in our resultant dataset, which were removed.
+
+```{r}
+county_collisions_per_year <- traffic |>
+  filter(Statistic == "All Fatal and Injury Collisions") |>
+  filter(County != "All Counties") |>
+  pivot_longer(
+    cols = `2013`:`2023`,
+    names_to = "Year",
+    values_to = "Total Collisions"
+  ) |>
+  select(`County`, `Year`, `Total Collisions`)
+
+# We also want to show the mean over all years
+county_means <- county_collisions_per_year |>
+  group_by(County) |>
+  summarise(
+    Year = "Mean",
+    `Total Collisions` = mean(`Total Collisions`)
+  )
+
+# Add the mean rows to the dataset
+county_collisions_per_year <- bind_rows(county_collisions_per_year, county_means)
+
+county_collisions_per_year <- counties |>
+  left_join(county_collisions_per_year, by = c("COUNTY" = "County"))
+
+# There is no traffic data for Northern Ireland, but there is collisions data.
+# This gives us undefined entries which we must remove.
+county_collisions_per_year <- county_collisions_per_year |>
+  filter(!is.na(Year))
+```
+
+Lastly, these data contain large outliers associated with the large population differences across the counties in Ireland (e.g. Dublin: ~1.35M, Cork: ~540k, Leitrim: ~30k - 1st, 2nd, and 32nd most populous counties in Ireland in 2016).
+We note that in this display, were were only interested in spatial changes in time, and hence we assumed population changes were not significant. This assumption is less reliable for counties in Leinster, which showed the most rapid increases in population between 2011-2016 (see [Census 2016 Summary Results - Part 1, Chapter 1, Page 11](https://www.cso.ie/en/csolatestnews/presspages/2017/census2016summaryresults-part1/)).
+
+```{r}
+# Convert from collisions to collisons per capita
+county_collisions_per_year <- county_collisions_per_year |>
+  mutate(`Collisions per Capita` = `Total Collisions` / POP)
+```
+
+# 3. Analysis
 
 This is where we will show our 4 displays. Each plot will be accompanied by a paragraph explaining the graphic and what was learned from it.
+
+### 3.1 Total Collisions per Capita per County
+
+```{r, fig.width=10, fig.height=10, fig.cap="**Figure 1**: Total traffic collisions per capita by county between 2013 and 2023. The collisions data were normalised by constant population from the 2016 census."}
+ggplot(county_collisions_per_year) +
+  geom_sf(aes(fill = `Collisions per Capita`)) +
+  scale_fill_viridis(name="Collisions per Capita", option="plasma") +
+  facet_wrap(~Year) +
+  # Make the colourbar span the height of the figure
+  # https://stackoverflow.com/questions/79318640/how-can-i-make-the-legend-color-bar-the-same-height-as-my-facet-wrapped-plot-pan
+  guides(
+    fill = guide_colorbar(
+      direction = "vertical",
+      barheight = unit(0.75, "npc"),
+      barwidth  = unit(0.03, "npc")
+    )
+  ) +
+  theme_bw(
+    # Increase font size
+    base_size = 20,
+  ) +
+  theme(
+    # Remove the axis labels, we don't really need them, and the longitude ticks
+    # wwere overlapping.
+    axis.text = element_blank(),
+    axis.ticks = element_blank(),
+    legend.margin = margin(0)
+  )
+```
+
+Figure 1 shows the distribution of collisions by county for each year between 2013 and 2023. The mean across all years was additionally displayed. These distributions were normalised by population to compare collisions per capita between counties, and its change in time. We highlight the following qualitative findings from these distributions:
+
+* The mean collisions per capita show relatively equal collisions with small variations between counties. Longford has the largest number of collisions for its population on average. Also elevated (in no particular order) were Kerry, Limerick, Waterford, Cavan, Louth. Clare showed the lowest average collisions per capita during the time period.
+
+* The COVID-19 pandemic is evident in the data. The number of collisions per captial for all counties is much lower in 2020 and 2021, which reflects the multiple state-wide stay-at-home orders in place during during these years.
+
+* We observe a gradual increase in collisions in the north of the country (clustered around Leitrim). This increase peaks in 2016, where Leitrim shows the largest number of collisions per capita for all years in this dataset, after which, we find a general decrease in this area.
 
 # Summary and Conclusions
 
