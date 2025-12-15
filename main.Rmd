@@ -193,7 +193,7 @@ Figure 1 shows the distribution of collisions by county for each year between 20
 
 * We observe a gradual increase in collisions in the north of the country (clustered around Leitrim). This increase peaks in 2016, where Leitrim shows the largest number of collisions per capita for all years in this dataset, after which, we find a general decrease in this area.
 
-## 3.2 Fatal collisions across all counties
+## 3.2 Fatal and injury collisions across provinces
 
 ```{r, fig.cap="**Figure 2:** Fatal collisions in Ireland from 2013 to 2023"}
 
