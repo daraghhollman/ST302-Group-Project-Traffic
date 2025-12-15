@@ -156,8 +156,6 @@ provinces_per_year <- provinces |>
 
 # 3. Analysis
 
-This is where we will show our 4 displays. Each plot will be accompanied by a paragraph explaining the graphic and what was learned from it.
-
 ### 3.1 Total Collisions per Capita per County
 
 ```{r, fig.width=10, fig.height=10, fig.cap="**Figure 1**: Total traffic collisions per capita by county between 2013 and 2023. The collisions data were normalised by constant population from the 2016 census."}
