@@ -12,6 +12,8 @@ Individual contributions to each section of this document are as follows:
 
 **Elise Drivon**:
 
+I, Elise Drivon, had primary responsiblity for sections 1.2, 2.2, and 3.2.
+
 **Daragh Hollman**:
 
 I, Daragh Hollman, had primary responsibility for sections 1.1, 2.1, and 3.1.
@@ -19,6 +21,8 @@ I, Daragh Hollman, had primary responsibility for sections 1.1, 2.1, and 3.1.
 **Catherine Kwagala**:
 
 **Lauren Nelson**:
+
+I, Lauren Nelson, had primary responsibility for sections 3.4 and 4.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(message=F, warning=F)
@@ -31,7 +35,10 @@ library(viridis)
 library(tidyverse)
 library(RColorBrewer)
 library(readr)
+library(ggthemes)
 library(tidyr)
+library(GGally)
+library(plotly)
 library(dplyr)
 library(sf) # Required udunits, and gdal system dependancies on Linux as packages are installed from source rather than binary. https://r-spatial.github.io/sf/
 ```
@@ -69,7 +76,7 @@ lea_166 <- st_read("https://raw.githubusercontent.com/brendanjodowd/maps/main/le
 
 ### 1.2 Research Question
 
-...
+In this research, we will observe the evolution of traffic collision data in Ireland from 2013 to 2023. We will see the variations across the different counties and identify potential trends over time. Indeed, we expect to observe a reduction of traffic collisions in 2020 and 2021, when most activities were restricted in Ireland due to the COVID-19 pandemic.  
 
 # 2. Data Adjustments
 
@@ -124,6 +131,29 @@ county_collisions_per_year <- county_collisions_per_year |>
   mutate(`Collisions per Capita` = `Total Collisions` / POP)
 ```
 
+## 2.2
+
+We grouped the counties available in the dataset into their provinces. We then computed the sum of collisions for each of the provinces. 
+
+```{r}
+traffic |> 
+  filter(!County == "All Counties") |> 
+  filter(Statistic == "All Fatal and Injury Collisions") -> collisions_data
+
+collisions_data |> mutate(Province = case_when(
+   County %in% c("Galway", "Leitrim", "Mayo", "Roscommon", "Sligo") ~ "Connacht",
+   County %in% c("Carlow","Dublin", "Kildare", "Kilkenny", "Laois", "Longford", "Louth", "Meath", "Offaly", "Westmeath", "Wexford", "Wicklow") ~ "Leinster" ,
+   County %in% c("Clare", "Cork", "Kerry", "Limerick", "Tipperary", "Waterford"
+) ~ "Munster",
+   County %in% c("Cavan", "Donegal", "Monaghan") ~ "Ulster" 
+)) -> provinces
+
+#This code computes the sum of collisions in each province per year
+provinces_per_year <- provinces |>
+  group_by(Province) |>
+  summarise(across(`2013`:`2023`, ~ sum(.x, na.rm = TRUE)))
+```
+
 # 3. Analysis
 
 This is where we will show our 4 displays. Each plot will be accompanied by a paragraph explaining the graphic and what was learned from it.
@@ -165,7 +195,22 @@ Figure 1 shows the distribution of collisions by county for each year between 20
 
 * We observe a gradual increase in collisions in the north of the country (clustered around Leitrim). This increase peaks in 2016, where Leitrim shows the largest number of collisions per capita for all years in this dataset, after which, we find a general decrease in this area.
 
-# 3.4 Fatal and Injury Collisions across all counties
+## 3.2
+
+```{r, fig.cap="**Figure 2:** Fatal collisions in Ireland from 2013 to 2023"}
+
+ggparcoord(provinces_per_year,
+    columns = 2:12, groupColumn = 1, scale="globalminmax"
+    ) +  labs(x = "Year", y = "Total Collisions", title = "Evolution of all collisions")-> plot_evolution
+
+ggplotly(plot_evolution)
+
+```
+
+
+We can see clearly that the data decreases significantly in 2020 and 2021 and increases again after 2022. For each province, the number of collisions in 2023 returns to approximately the same level as in 2013. Therefore, we can see that the pandemic had an effect on traffic and collisions. The number of collisions dropped during the two years of restrictions due to the COVID-19. The province of Leinster shows more fluctuations and a general increase in collisions from 2013 to 2023 probably due to the increase of population during those 10 years.  
+
+## 3.4 Fatal and Injury Collisions across all counties
 
 ```{r,  out.width="50%", fig.show='hold', fig.cap="**Figure 4:** Number of fatal and injury collisions happening per year in all counties between 2013 and 2023."}
 Collisionslonger <- traffic |>
