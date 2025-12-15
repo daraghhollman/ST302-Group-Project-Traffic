@@ -28,6 +28,9 @@ knitr::opts_chunk$set(message=F, warning=F)
 # Import packages here
 library(ggplot2)
 library(viridis)
+library(tidyverse)
+library(RColorBrewer)
+library(readr)
 library(tidyr)
 library(dplyr)
 library(sf) # Required udunits, and gdal system dependancies on Linux as packages are installed from source rather than binary. https://r-spatial.github.io/sf/
@@ -162,6 +165,43 @@ Figure 1 shows the distribution of collisions by county for each year between 20
 
 * We observe a gradual increase in collisions in the north of the country (clustered around Leitrim). This increase peaks in 2016, where Leitrim shows the largest number of collisions per capita for all years in this dataset, after which, we find a general decrease in this area.
 
-# Summary and Conclusions
+# 3.4 Fatal and Injury Collisions across all counties
 
-Summarise our conclusions in one paragraph
+```{r,  out.width="50%", fig.show='hold', fig.cap="**Figure 4:** Number of fatal and injury collisions happening per year in all counties between 2013 and 2023."}
+Collisionslonger <- traffic |>
+  filter(Statistic == "All Fatal and Injury Collisions", County == "All Counties") |>
+pivot_longer(cols = `2013`:`2023`, names_to = "year" , values_to = "value" )
+
+
+ggplot(data = Collisionslonger,
+       aes(x = year, y = value, fill = year)) +
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  geom_col(aes(fill = year == 2020), show.legend = FALSE) +
+   scale_fill_manual(values = c("FALSE" = "lightblue", "TRUE" = "purple3")) +
+  xlab("Year") +
+  ylab("Number of fatal and injury collisions") +
+  theme(legend.position = "none")
+
+ggplot(data = Collisionslonger,
+       aes(x = value, y = reorder(year, value, sum, na.rm=T), fill = value)) +
+  geom_col() +
+  theme(axis.text.x = element_text(angle = 45, hjust=1)) +
+  scale_fill_distiller(palette = "YlGn", direction = 1) +
+  xlab("Number of fatal and injury collisions") +
+  ylab("Year") +
+  theme(legend.position = "none")
+```
+
+Figure 4 shows the number of collisions by year between 2013 and 2023 in all counties in the form of two column charts. These charts are to highlight the following qualitative findings:
+ - we observe a gradual increase in collisions across all counties. this drops in 2020, as highlighted by the charts, and peaks in 2017. 
+ - The drop in 2020 is evident as Covid-19, where the pandemic was causing lockdowns state-wide. 
+ -This drop in collisions highlights how with less population density on the roads and streets, there are less incidents and safer spaces. 
+
+# 4. Summary and Conclusions
+
+From the plots created, we are able to observe from the data that there appears to be a steady increase in the number of collisions and casualties across Ireland. There were relatively equal collisions with only small variation between the counties. 
+There is a sudden drop in the years 2019 and 2020, which can be assumed to be because of the Covid-19 pandemic. 
+The years following 2020 show an uptick in the number of collisions, showing a trend in the increase of collisions as time goes by. 
+
+From the produced plots, we can come to the conclusion that due to worsening traffic conditions and an increasing population of drivers and overall population density, there is a steady increase in the number of car incidents each year. There are outliers in the years 2019 and 2020, but those can be concluded to be because of the Covid 19 pandemic, in which there were several lockdowns that decreased the number of cars on the roads and number of people in the streets in general, dropping the numbers of both collisions and casualties. It can thus be concluded that as long as there continues to be an increase in population densities and cars on the road, there will be rising incident numbers caused by genuine accidents, the popularity of phones and general recklessness. 
