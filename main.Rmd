@@ -12,13 +12,15 @@ Individual contributions to each section of this document are as follows:
 
 **Elise Drivon**:
 
-I, Elise Drivon, had primary responsiblity for sections 1.2, 2.2, and 3.2.
+I, Elise Drivon, had primary responsiblity for sections 1.2, 2.3, and 3.3.
 
 **Daragh Hollman**:
 
 I, Daragh Hollman, had primary responsibility for sections 1.1, 2.1, and 3.1.
 
 **Catherine Kwagala**:
+
+I, Catherine Kwagala, had the primary responsability for sections 2.2 and 3.2.
 
 **Lauren Nelson**:
 
@@ -131,7 +133,36 @@ county_collisions_per_year <- county_collisions_per_year |>
   mutate(`Collisions per Capita` = `Total Collisions` / POP)
 ```
 
-## 2.2 Grouping counties into provinces
+## 2.2 Creating a correlation matrix
+
+```{r}
+#Select year columns.
+
+years <-2013:2023
+year_cols <-intersect(colnames(traffic), as.character(years))
+
+```
+
+```{r}
+#All counties + all statistics combined;Keeping only numeric year data.
+
+df_years <- traffic[, year_cols]
+df_years <- as.data.frame(
+  lapply(df_years, function(x) as.numeric(as.character(x)))
+)
+
+
+```
+
+```{r}
+#Create the correlation matrix (years vs years)
+
+#How are years correlated with each other across all counties and statistics?”
+
+cor_matrix <-cor(df_years, use = "pairwise.complete.obs")
+print(cor_matrix)
+```
+## 2.3 Grouping counties into provinces
 
 We grouped the counties available in the dataset into their provinces. We then computed the sum of collisions for each of the provinces. 
 
@@ -193,9 +224,53 @@ Figure 1 shows the distribution of collisions by county for each year between 20
 
 * We observe a gradual increase in collisions in the north of the country (clustered around Leitrim). This increase peaks in 2016, where Leitrim shows the largest number of collisions per capita for all years in this dataset, after which, we find a general decrease in this area.
 
-## 3.2 Fatal and injury collisions across provinces
+## 3.2 Correlation of accident patterns between years in all counties
 
-```{r, fig.cap="**Figure 2:** Fatal collisions in Ireland from 2013 to 2023"}
+```{r}
+library(corrplot)
+```
+
+```{r}
+
+corrplot(cor_matrix,
+         method = "ellipse",#Ellipse shapes
+         type = "upper",
+         diag = FALSE,
+         order = "hclust",#Hierarchical clusteringorder
+         hclust.method = "average",
+  col = colorRampPalette(c("blue","white","red"))(200),
+         tl.col = "black",
+         tl.cex = 0.8,
+         tl.srt = 45,
+         addCoef.col = "black",
+         number.cex = 0.7,
+         cl.pos = "r",
+         cl.cex = 0.8)
+         
+```
+
+What this heatmap represents.
+
+Rows & columns: Years (2013–2023)
+
+Each cell: Correlation of accident patterns between two years
+
+Red: similar patterns
+
+Blue: dissimilar patterns
+
+Ellipses: strength + direction of correlation
+
+Clustering: years with similar accident behaviour grouped together
+
+The correlation plot shows extremely strong positive correlations between years (mostly >0.9) As indicated by the deep red ellipses and values close to 1. Counties with high fatal collisions in one year generally remain high in other years. Hierarchical clustering groups adjacent years together, reflecting similar temporal patterns. These large positive correlations also indicate that, over time,  the spatial distribution of fatal traffic collisions across counties is quite stable. That is, those counties with a large number of fatal collisions in one year  Also tend to have large numbers in subsequent years, whereas low-county counties stay low.  The temporal clustering of successive years with one another suggests smooth changes rather  than abrupt shifts in collision patterns.
+
+The heat map confirms that fatal traffic collisions in Ireland exhibit strong temporal consistency 
+across counties from 2013 to 2023. Such persistence indicates that road safety outcomes are determined by long-term structural and regional factors rather than by short-term fluctuations.
+
+## 3.3 Fatal and injury collisions across provinces
+
+```{r, fig.cap="**Figure 3:** Fatal collisions in Ireland from 2013 to 2023"}
 
 ggparcoord(provinces_per_year,
     columns = 2:12, groupColumn = 1, scale="globalminmax"
@@ -208,7 +283,7 @@ ggplotly(plot_evolution)
 
 We can see clearly that the data decreases significantly in 2020 and 2021 and increases again after 2022. For each province, the number of collisions in 2023 returns to approximately the same level as in 2013. Therefore, we can see that the pandemic had an effect on traffic and collisions. The number of collisions dropped during the two years of restrictions due to the COVID-19. The province of Leinster shows more fluctuations and a general increase in collisions from 2013 to 2023 probably due to the increase of population during those 10 years.  
 
-## 3.4 Fatal and injury collisions across all counties
+## 3.4 Fatal and injury collisions of each year across all counties
 
 ```{r,  out.width="50%", fig.show='hold', fig.cap="**Figure 4:** Number of fatal and injury collisions happening per year in all counties between 2013 and 2023."}
 Collisionslonger <- traffic |>
